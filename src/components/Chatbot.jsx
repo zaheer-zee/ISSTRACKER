@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
+import { HfInference } from '@huggingface/inference';
 import { MessageSquare, X, Send, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -40,7 +40,7 @@ export default function Chatbot({ dashboardData }) {
     setIsTyping(true);
 
     try {
-      const token = import.meta.env.VITE_HF_TOKEN;
+      const token = import.meta.env.VITE_AI_TOKEN;
       if (!token) {
         throw new Error("Missing AI Token");
       }
@@ -58,25 +58,20 @@ export default function Chatbot({ dashboardData }) {
       ${dashboardData.news?.map((n, i) => `${i+1}. Title: ${n.title} (Source: ${n.source?.name}) - ${n.description}`).join('\n')}
       `;
 
-      // Construct Prompt for Mistral Instruct
-      const prompt = `<s>[INST] ${context}\n\nUser Question: ${userMessage.text} [/INST]`;
+      const client = new HfInference(token);
 
-      const response = await axios.post(
-        'https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2',
-        { 
-          inputs: prompt,
-          parameters: { max_new_tokens: 150, return_full_text: false, temperature: 0.1 }
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
+      // Using Zephyr as it's highly reliable on HF Free tier
+      const out = await client.chatCompletion({
+        model: "HuggingFaceH4/zephyr-7b-beta",
+        messages: [
+          { role: "system", content: context },
+          { role: "user", content: userMessage.text }
+        ],
+        max_tokens: 150
+      });
 
       const botMessage = { 
-        text: response.data[0]?.generated_text || "I couldn't generate a response.", 
+        text: out.choices[0]?.message?.content || "I couldn't generate a response.", 
         isUser: false 
       };
       setMessages((prev) => [...prev, botMessage].slice(-30));

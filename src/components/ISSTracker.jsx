@@ -38,7 +38,7 @@ export default function ISSTracker({ onSpeedUpdate, onDashboardUpdate }) {
   const fetchISSPosition = async (isManual = false) => {
     try {
       if (isManual) setLoading(true);
-      const res = await axios.get('http://api.open-notify.org/iss-now.json');
+      const res = await axios.get('/api/iss-now');
       const { latitude, longitude } = res.data.iss_position;
       const lat = parseFloat(latitude);
       const lng = parseFloat(longitude);
@@ -86,7 +86,7 @@ export default function ISSTracker({ onSpeedUpdate, onDashboardUpdate }) {
 
   const fetchPeople = async () => {
     try {
-      const res = await axios.get('http://api.open-notify.org/astros.json');
+      const res = await axios.get('/api/astros');
       // Filter only people in ISS
       const issPeople = res.data.people.filter(p => p.craft === 'ISS');
       setPeople(issPeople);
