@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { HfInference } from '@huggingface/inference';
+import axios from 'axios';
 import { MessageSquare, X, Send, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -40,11 +41,6 @@ export default function Chatbot({ dashboardData }) {
     setIsTyping(true);
 
     try {
-      const token = import.meta.env.VITE_AI_TOKEN;
-      if (!token) {
-        throw new Error("Missing AI Token");
-      }
-
       // Format Dashboard Data Context
       const context = `You are a helpful dashboard AI assistant. You must ONLY answer questions based on the following dashboard data. DO NOT use outside knowledge. If the answer is not in the data, say "I don't have that information in my current dashboard data."
       
@@ -58,11 +54,13 @@ export default function Chatbot({ dashboardData }) {
       ${dashboardData.news?.map((n, i) => `${i+1}. Title: ${n.title} (Source: ${n.source?.name}) - ${n.description}`).join('\n')}
       `;
 
-      const client = new HfInference(token);
+      const token = import.meta.env.VITE_AI_TOKEN;
+      if (!token) throw new Error("Missing AI Token");
 
-      // Using Zephyr as it's highly reliable on HF Free tier
-      const out = await client.chatCompletion({
-        model: "HuggingFaceH4/zephyr-7b-beta",
+      const hf = new HfInference(token);
+
+      const out = await hf.chatCompletion({
+        model: "Qwen/Qwen2.5-72B-Instruct",
         messages: [
           { role: "system", content: context },
           { role: "user", content: userMessage.text }
@@ -74,11 +72,12 @@ export default function Chatbot({ dashboardData }) {
         text: out.choices[0]?.message?.content || "I couldn't generate a response.", 
         isUser: false 
       };
+      
       setMessages((prev) => [...prev, botMessage].slice(-30));
 
     } catch (error) {
       console.error(error);
-      const errorMsg = { text: "Error connecting to AI service. Please check your API token or try again later.", isUser: false };
+      const errorMsg = { text: "Error connecting to AI service. Please try again later.", isUser: false };
       setMessages((prev) => [...prev, errorMsg].slice(-30));
     } finally {
       setIsTyping(false);

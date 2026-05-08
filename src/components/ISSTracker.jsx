@@ -38,30 +38,24 @@ export default function ISSTracker({ onSpeedUpdate, onDashboardUpdate }) {
   const fetchISSPosition = async (isManual = false) => {
     try {
       if (isManual) setLoading(true);
-      const res = await axios.get('/api/iss-now');
-      const { latitude, longitude } = res.data.iss_position;
-      const lat = parseFloat(latitude);
-      const lng = parseFloat(longitude);
+      // wheretheiss.at supports HTTPS natively - no proxy needed
+      const res = await axios.get('https://api.wheretheiss.at/v1/satellites/25544');
+      const { latitude: lat, longitude: lng, velocity } = res.data;
       const currentTime = Date.now();
 
       setIssData({ lat, lng });
       setPath((prev) => {
         const newPath = [...prev, [lat, lng]];
-        // Keep only last 15 positions
         return newPath.slice(-15);
       });
 
-      // Calculate Speed
-      if (lastPos.current) {
-        const dist = calculateDistance(lastPos.current.lat, lastPos.current.lng, lat, lng);
-        const timeDiffSec = (currentTime - lastUpdateTime.current) / 1000;
-        const currentSpeed = calculateSpeed(dist, timeDiffSec);
-        setSpeed(currentSpeed);
-        if (onSpeedUpdate) {
-           onSpeedUpdate({ time: new Date().toLocaleTimeString(), speed: currentSpeed });
-        }
+      // Use velocity from API directly (km/h)
+      const currentSpeed = velocity;
+      setSpeed(currentSpeed);
+      if (onSpeedUpdate) {
+        onSpeedUpdate({ time: new Date().toLocaleTimeString(), speed: currentSpeed });
       }
-      
+
       lastPos.current = { lat, lng };
       lastUpdateTime.current = currentTime;
 
@@ -86,8 +80,8 @@ export default function ISSTracker({ onSpeedUpdate, onDashboardUpdate }) {
 
   const fetchPeople = async () => {
     try {
+      // Use our serverless function as backup - open-notify HTTP is unreliable
       const res = await axios.get('/api/astros');
-      // Filter only people in ISS
       const issPeople = res.data.people.filter(p => p.craft === 'ISS');
       setPeople(issPeople);
     } catch (err) {
@@ -177,17 +171,28 @@ export default function ISSTracker({ onSpeedUpdate, onDashboardUpdate }) {
         </MapContainer>
       </div>
 
-      <div className="bg-blue-50 dark:bg-slate-700 p-4 rounded-lg flex items-start gap-4">
-        <div className="bg-blue-100 dark:bg-blue-900 p-3 rounded-full text-blue-600 dark:text-blue-300">
-          <Users size={24} />
-        </div>
-        <div>
-          <h3 className="font-bold text-slate-800 dark:text-white mb-1">
-            People in Space Right Now: {people.length}
+      <div className="bg-blue-50 dark:bg-slate-700 p-4 rounded-lg">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="bg-blue-100 dark:bg-blue-900 p-2 rounded-full text-blue-600 dark:text-blue-300">
+            <Users size={20} />
+          </div>
+          <h3 className="font-bold text-slate-800 dark:text-white">
+            🧑‍🚀 People aboard ISS: <span className="text-blue-600 dark:text-blue-300">{people.length}</span>
           </h3>
-          <p className="text-sm text-slate-600 dark:text-slate-300">
-            {people.map(p => p.name).join(', ')}
-          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {people.length === 0 ? (
+            <span className="text-sm text-slate-400">Loading crew data...</span>
+          ) : (
+            people.map((p, i) => (
+              <span
+                key={i}
+                className="inline-flex items-center gap-1 px-3 py-1 bg-white dark:bg-slate-600 border border-blue-200 dark:border-slate-500 text-slate-800 dark:text-white text-sm font-medium rounded-full shadow-sm"
+              >
+                👤 {p.name}
+              </span>
+            ))
+          )}
         </div>
       </div>
     </div>

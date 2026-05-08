@@ -55,14 +55,14 @@ function App() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         
         {/* Top row: Map and News */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 h-auto xl:h-[650px]">
-          <div className="h-full">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+          <div>
             <ISSTracker 
               onSpeedUpdate={handleSpeedUpdate} 
               onDashboardUpdate={updateDashboardContext}
             />
           </div>
-          <div className="h-full mt-10 xl:mt-0">
+          <div className="mt-10 xl:mt-0">
             <NewsDashboard onNewsFetched={(news) => {
               setNewsData(news);
               setDashboardData(prev => ({ ...prev, news }));

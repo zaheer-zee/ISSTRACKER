@@ -1,12 +1,8 @@
 {
-  "rewrites": [
-    {
-      "source": "/api/iss-now",
-      "destination": "http://api.open-notify.org/iss-now.json"
-    },
-    {
-      "source": "/api/astros",
-      "destination": "http://api.open-notify.org/astros.json"
+  "functions": {
+    "api/*.js": {
+      "memory": 128,
+      "maxDuration": 10
     }
-  ]
+  }
 }
