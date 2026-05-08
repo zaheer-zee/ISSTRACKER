@@ -40,7 +40,7 @@ export default function Chatbot({ dashboardData }) {
     setIsTyping(true);
 
     try {
-      const token = import.meta.env.VITE_AI_TOKEN;
+      const token = import.meta.env.VITE_HF_TOKEN;
       if (!token) {
         throw new Error("Missing AI Token");
       }

@@ -28,13 +28,29 @@ export default function NewsDashboard({ onNewsFetched }) {
 
       const apiKey = import.meta.env.VITE_NEWS_API_KEY;
       let url = 'https://saurav.tech/NewsAPI/top-headlines/category/general/us.json';
+      let isNewsDataIO = false;
       
       if (apiKey && apiKey !== 'your_newsapi_key_here') {
-        url = `https://newsapi.org/v2/top-headlines?country=us&apiKey=${apiKey}`;
+        url = `https://newsdata.io/api/1/news?apikey=${apiKey}&language=en&country=us`;
+        isNewsDataIO = true;
       }
 
       const res = await axios.get(url);
-      let fetchedArticles = res.data.articles.slice(0, 10); // get up to 10
+      let fetchedArticles = [];
+      
+      if (isNewsDataIO) {
+        fetchedArticles = (res.data.results || []).map(article => ({
+          title: article.title,
+          urlToImage: article.image_url,
+          source: { name: article.source_id || 'News' },
+          publishedAt: article.pubDate,
+          description: article.description,
+          author: article.creator ? article.creator.join(', ') : '',
+          url: article.link
+        })).slice(0, 10);
+      } else {
+        fetchedArticles = res.data.articles.slice(0, 10);
+      }
 
       // clean up articles with missing data
       fetchedArticles = fetchedArticles.filter(a => a.title && a.title !== '[Removed]');
